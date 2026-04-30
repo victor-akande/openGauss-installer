@@ -1,4 +1,4 @@
-# opengauss-scripts
+# openGauss-installer
 
 A collection of installation and deployment scripts for openGauss, Huawei's enterprise database. This repository provides both single-node and multinode installer workflows, along with environment preparation utilities for openEuler systems.
 
@@ -31,8 +31,8 @@ This repository is intended to help automate openGauss deployments on openEuler-
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/victor-akande/opengauss-scripts.git
-   cd opengauss-scripts
+   git clone https://github.com/victor-akande/openGauss-installer.git
+   cd openGauss-installer
    ```
 
 2. Review the environment preparation script:
