@@ -29,7 +29,7 @@ The `one_click_install.sh` script provides an automated installation process for
 
 1. **Navigate to the script directory**:
    ```bash
-   cd /path/to/opengauss-scripts/installation/multinode
+   cd /path/to/openGauss-installer/installation/multinode
    ```
 
 2. **Make the script executable** (if not already):

@@ -28,7 +28,7 @@ The `one_click_install.sh` script provides a streamlined, automated installation
 
 1. **Navigate to the script directory**:
    ```bash
-   cd /path/to/opengauss-scripts/installation/singlenode
+   cd /path/to/openGauss-installer/installation/singlenode
    ```
 
 2. **Make the script executable** (if not already):
@@ -94,4 +94,4 @@ gsql -d postgres -p 15400
 ## Support
 
 For issues or questions about openGauss, refer to the official documentation at [opengauss.org](https://opengauss.org).</content>
-<parameter name="filePath">/workspaces/opengauss-scripts/installation/singlenode/README_install.sh.md
+<parameter name="filePath">/workspaces/openGauss-installer/installation/singlenode/README_install.sh.md
