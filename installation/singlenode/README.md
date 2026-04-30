@@ -1,5 +1,14 @@
 # Single-Node openGauss Configuration
 
+## Installation Options
+
+For a streamlined deployment, consider using the [one-click installer script](./one_click_install.sh) which automates the entire installation process. This script handles system preparation, dependency installation, package download, and database setup in a single run.
+
+- **[one_click_install.sh](./one_click_install.sh)**: Interactive installer script for openGauss single-node deployment
+- **[README_one_click_install.sh.md](./README_one_click_install.sh.md)**: Detailed documentation for the one-click installer
+
+The installer script is recommended for most users as it simplifies the setup process while maintaining flexibility through interactive prompts.
+
 - **Source:** [installation/singlenode/1-node.xml](./1-node.xml)
 
 **Overview**
