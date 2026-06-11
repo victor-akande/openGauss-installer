@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ROOT>
+    <!-- Overall information about openGauss -->
+    <CLUSTER>
+        <!-- Database name -->
+        <PARAM name="clusterName" value="Cluster_template" />
+        <!-- Database node name (hostname) -->
+        <PARAM name="nodeNames" value="node1_hostname,node2_hostname" />
+        <!-- Database installation directory -->
+        <PARAM name="gaussdbAppPath" value="/opt/huawei/install/app" />
+        <!-- Log directory -->
+        <PARAM name="gaussdbLogPath" value="/var/log/omm" />
+        <!-- Temporary file directory -->
+        <PARAM name="tmpMppdbPath" value="/opt/huawei/tmp"/>
+        <!-- Database tool directory -->
+        <PARAM name="gaussdbToolPath" value="/opt/huawei/install/om" />
+        <!--Directory of the core file of the database -->
+        <PARAM name="corePath" value="/opt/huawei/corefile"/>
+        <!-- Node IP address, which corresponds to the database node name list -->
+        <PARAM name="backIp1s" value="192.168.0.1,192.168.0.2"/> 
+    </CLUSTER>
+    <!-- Information about the node deployment on each server -->
+    <DEVICELIST>
+        <!-- Deployment information on node 1 -->
+        <DEVICE sn="node1_hostname">
+            <!-- Host name of node 1 -->
+            <PARAM name="name" value="node1_hostname"/>
+            <!-- AZ where node1 is located and priority of the AZ -->
+            <PARAM name="azName" value="AZ1"/>
+            <PARAM name="azPriority" value="1"/>
+            <!-- IP address of node 1. If only one NIC is available for the server, set backIP1 and sshIP1 to the same IP address. -->
+            <PARAM name="backIp1" value="192.168.0.1"/>
+            <PARAM name="sshIp1" value="192.168.0.1"/>
+            
+            <!-- CM node deployment information (Primary) -->
+            <PARAM name="cmsNum" value="1"/>
+            <PARAM name="cmDir" value="/opt/huawei/install/cm"/>
+            <PARAM name="cmServerPortBase" value="15300"/>
+            <PARAM name="cmServerListenIp1" value="192.168.0.1,192.168.0.2"/>
+            <PARAM name="cmServerHaIp1" value="192.168.0.1,192.168.0.2"/>
+            <!-- CM server level. Currently, only 1 is supported. -->
+            <PARAM name="cmServerlevel" value="1"/>
+            <!-- Host names of the primary and standby CMS nodes -->
+            <PARAM name="cmServerRelation" value="node1_hostname,node2_hostname"/>
+            
+            <!--dn-->
+            <PARAM name="dataNum" value="1"/>
+            <PARAM name="dataPortBase" value="15400"/>
+            <PARAM name="dataNode1" value="/opt/huawei/install/data/dn,node2_hostname,/opt/huawei/install/data/dn"/>
+            <PARAM name="dataNode1_syncNum" value="0"/>
+        </DEVICE>
+
+        <!-- Node deployment information on node 2 (Standby) -->
+        <DEVICE sn="node2_hostname">
+            <!-- Host name of node 2 -->
+            <PARAM name="name" value="node2_hostname"/>
+            <!-- AZ where node 2 is located and priority of the AZ -->
+            <PARAM name="azName" value="AZ1"/>
+            <PARAM name="azPriority" value="1"/>
+            <!-- IP address of node 2. If only one NIC is available for the server, set backIP1 and sshIP1 to the same IP address. -->
+            <PARAM name="backIp1" value="192.168.0.2"/>
+            <PARAM name="sshIp1" value="192.168.0.2"/>
+            
+            <!-- CM node deployment information (Standby) -->
+            <PARAM name="cmDir" value="/opt/huawei/install/cm"/>
+            <PARAM name="cmServerPortStandby" value="15300"/>
+        </DEVICE>
+    </DEVICELIST>
+</ROOT>

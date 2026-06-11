@@ -1,13 +1,240 @@
 #!/bin/bash
+#############################################################################
+# Copyright (c): 2021-2023, openGauss Community
+#
+# openGauss installer for multi-node topologies
+# Supports 1 primary + 0 to 8 standby nodes (total 2-9 nodes)
+#############################################################################
 
-if [ "$EUID" -ne 0 ]; then
-  echo -e "\e[31mError: Please run this script as root.\e[0m"
-  exit 1
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEMPLATE_DIR="${SCRIPT_DIR}/templates"
+CONFIG_FILE="${SCRIPT_DIR}/cluster_config.xml"
+LOG_FILE="${SCRIPT_DIR}/install.log"
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+#############################################################################
+# Functions
+#############################################################################
+
+print_header() {
+    echo -e "${BLUE}===============================================${NC}"
+    echo -e "${BLUE}$1${NC}"
+    echo -e "${BLUE}===============================================${NC}"
+}
+
+print_success() {
+    echo -e "${GREEN}✓ $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}✗ $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠ $1${NC}"
+}
+
+print_info() {
+    echo -e "${BLUE}ℹ $1${NC}"
+}
+
+usage() {
+    cat << EOF
+Usage: $0 [OPTIONS]
+
+Options:
+    -t, --topology TOPOLOGY     Topology type. Supported values:
+                                - 1-primary-1-standby (2 nodes)
+                                - 1-primary-2-standby (3 nodes)
+                                - 1-primary-3-standby (4 nodes)
+                                - 1-primary-4-standby (5 nodes)
+                                - 1-primary-5-standby (6 nodes)
+                                - 1-primary-6-standby (7 nodes)
+                                - 1-primary-7-standby (8 nodes)
+                                - 1-primary-8-standby (9 nodes)
+                                - 1-primary-1-standby-cascaded (3 nodes with cascading)
+    
+    -o, --output FILE           Output config file path
+                                Default: ${CONFIG_FILE}
+    
+    -l, --list                  List all available templates
+    
+    -h, --help                  Display this help message
+
+Examples:
+    # Generate config for 1 primary + 2 standby topology
+    $0 --topology 1-primary-2-standby
+
+    # Specify custom output location
+    $0 --topology 1-primary-3-standby --output /path/to/config.xml
+
+    # List available templates
+    $0 --list
+
+EOF
+    exit 1
+}
+
+list_templates() {
+    print_header "Available Topology Templates"
+    
+    echo -e "${BLUE}Standard Topologies:${NC}"
+    if [ -d "${TEMPLATE_DIR}" ]; then
+        ls -1 "${TEMPLATE_DIR}"/1-primary-*.xml | grep -v cascaded | while read -r file; do
+            topology=$(basename "$file" .xml)
+            node_count=$(($(grep -o "node[0-9]*_hostname" "$file" | sort -u | wc -l)))
+            echo "  • $topology ($node_count nodes)"
+        done
+    fi
+    
+    echo -e "\n${BLUE}Cascaded Topologies:${NC}"
+    if [ -d "${TEMPLATE_DIR}" ]; then
+        ls -1 "${TEMPLATE_DIR}"/1-primary-*-cascaded.xml 2>/dev/null | while read -r file; do
+            topology=$(basename "$file" .xml)
+            node_count=$(($(grep -o "node[0-9]*_hostname" "$file" | sort -u | wc -l)))
+            echo "  • $topology ($node_count nodes with cascading)"
+        done
+    fi
+    
+    exit 0
+}
+
+validate_topology() {
+    local topology=$1
+    
+    if [ ! -f "${TEMPLATE_DIR}/${topology}.xml" ]; then
+        print_error "Topology not found: ${topology}"
+        echo "Available topologies:"
+        list_templates
+        return 1
+    fi
+    
+    return 0
+}
+
+copy_and_customize() {
+    local template=$1
+    local output=$2
+    
+    if ! cp "${template}" "${output}"; then
+        print_error "Failed to copy template to ${output}"
+        return 1
+    fi
+    
+    print_success "Configuration template copied to ${output}"
+    return 0
+}
+
+show_customization_guide() {
+    local output=$1
+    local topology=$(basename "$output" .xml)
+    local node_count=$(grep -o "node[0-9]*_hostname" "$output" | sort -u | wc -l)
+    
+    print_info "Configuration file created: ${output}"
+    print_info "Topology: ${topology} (${node_count} nodes)"
+    
+    echo -e "\n${YELLOW}Next steps:${NC}"
+    echo "1. Edit the configuration file to customize:"
+    echo "   - Cluster name (clusterName)"
+    echo "   - Node hostnames (replace node1_hostname, node2_hostname, etc.)"
+    echo "   - IP addresses (update all IP addresses)"
+    echo "   - Installation paths (gaussdbAppPath, gaussdbLogPath, etc.)"
+    echo ""
+    echo "2. Ensure all nodes are accessible via SSH"
+    echo ""
+    echo "3. Run the openGauss installation with:"
+    echo "   gs_install -X ${output}"
+    echo ""
+    echo "4. Or use the provided wrapper script:"
+    echo "   ./gs_install.sh -X ${output}"
+}
+
+#############################################################################
+# Main script
+#############################################################################
+
+TOPOLOGY=""
+OUTPUT_FILE="${CONFIG_FILE}"
+HELP=0
+LIST=0
+
+# Parse command-line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -t|--topology)
+            TOPOLOGY="$2"
+            shift 2
+            ;;
+        -o|--output)
+            OUTPUT_FILE="$2"
+            shift 2
+            ;;
+        -l|--list)
+            LIST=1
+            shift
+            ;;
+        -h|--help)
+            HELP=1
+            shift
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            usage
+            ;;
+    esac
+done
+
+# Handle help and list
+if [ $HELP -eq 1 ]; then
+    usage
 fi
 
-echo -e "\e[32m=================================================================\e[0m"
-echo -e "\e[32m    openGauss Primary/Standby Interactive Installer              \e[0m"
-echo -e "\e[32m=================================================================\e[0m"
+if [ $LIST -eq 1 ]; then
+    list_templates
+fi
+
+# Validate topology was provided
+if [ -z "$TOPOLOGY" ]; then
+    print_error "Topology must be specified"
+    usage
+fi
+
+# Validate topology exists
+if ! validate_topology "$TOPOLOGY"; then
+    exit 1
+fi
+
+print_header "openGauss Multi-Node Installer"
+print_info "Generating configuration for topology: ${TOPOLOGY}"
+
+# Copy template to output location
+TEMPLATE_FILE="${TEMPLATE_DIR}/${TOPOLOGY}.xml"
+if ! copy_and_customize "$TEMPLATE_FILE" "$OUTPUT_FILE"; then
+    exit 1
+fi
+
+# Show customization guide
+echo ""
+show_customization_guide "$OUTPUT_FILE"
+
+print_success "Configuration generation complete!"
+
+# Log the action
+{
+    echo "$(date): Topology ${TOPOLOGY} configuration generated"
+    echo "Output: ${OUTPUT_FILE}"
+    echo ""
+} >> "$LOG_FILE"
+
+exit 0
 echo ""
 
 # ------------------------------------------------------------------------------

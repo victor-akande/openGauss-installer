@@ -1,0 +1,6 @@
+Thu Jun 11 14:31:10 UTC 2026: Topology 1-primary-2-standby configuration generated
+Output: test-config.xml
+
+Thu Jun 11 14:31:39 UTC 2026: Topology 1-primary-1-standby-cascaded configuration generated
+Output: cascaded-test.xml
+
