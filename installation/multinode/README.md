@@ -42,22 +42,47 @@ multinode/
 │   ├── 1-primary-7-standby.xml
 │   ├── 1-primary-8-standby.xml
 │   └── 1-primary-1-standby-cascaded.xml
-├── one_click_install.sh        # Database configuration generator
+├── one_click_install.sh        # Flexible topology selector
+├── configure_cluster.sh        # Interactive cluster configuration helper
 ├── cm_install.sh               # Cluster Manager installer
 ├── README.md                   # This file
-└── cluster_config.xml          # Generated configuration (created by script)
+└── *-cluster.xml               # Generated configurations (created by scripts)
 ```
+
+**Script Descriptions:**
+
+- **configure_cluster.sh**: Interactive helper that guides users through collecting cluster details (hostnames, IP addresses, cluster name, cascade roles) and generates a customized configuration file
+- **one_click_install.sh**: Quick configuration generator for users who already know their topology and parameters
+- **cm_install.sh**: Automates Cluster Manager installation after successful database deployment
 
 ## Quick Start
 
-### 1. List Available Topologies
+### Option 1: Interactive Configuration (Recommended for First-Time Users)
+
+Use the interactive helper to be guided through cluster configuration step-by-step:
+
+```bash
+cd installation/multinode
+./configure_cluster.sh
+```
+
+The script will:
+1. Present available topology options
+2. Ask for cluster name and node details (hostnames, IP addresses)
+3. Optionally configure cascade replication
+4. Generate a customized configuration file
+5. Validate the configuration
+
+### Option 2: Quick Configuration (For Experienced Users)
+
+#### List Available Topologies
 
 ```bash
 cd installation/multinode
 ./one_click_install.sh --list
 ```
 
-### 2. Generate Configuration for Your Topology
+#### Generate Configuration for Your Topology
 
 Generate a configuration file for a 1-primary-2-standby topology:
 
@@ -65,7 +90,7 @@ Generate a configuration file for a 1-primary-2-standby topology:
 ./one_click_install.sh --topology 1-primary-2-standby --output my-cluster.xml
 ```
 
-### 3. Customize the Configuration
+### Step 3: Customize the Configuration
 
 Edit the generated XML file to set:
 - **Cluster Name**: Update `clusterName` parameter
@@ -88,7 +113,7 @@ Edit the generated XML file to set:
 <PARAM name="sshIp1" value="10.0.1.10"/>
 ```
 
-### 4. Deploy the Database Cluster
+### Step 4: Deploy the Database Cluster
 
 Use the standard openGauss installation tool:
 
@@ -96,7 +121,7 @@ Use the standard openGauss installation tool:
 gs_install -X my-cluster.xml
 ```
 
-### 5. Deploy Cluster Manager (Optional but Recommended)
+### Step 5: Deploy Cluster Manager (Optional but Recommended)
 
 After successful database installation, deploy CM for automatic failover:
 
@@ -108,6 +133,54 @@ After successful database installation, deploy CM for automatic failover:
 ./cm_install.sh --config my-cluster.xml \
                 --package /path/to/openGauss-CM-6.0.0-*.tar.gz \
                 --ca-password 'MySecurePass@123'
+```
+
+## Configuration Tools
+
+### Interactive Configuration: configure_cluster.sh
+
+The `configure_cluster.sh` script provides an interactive, step-by-step approach to cluster configuration. It's ideal for first-time users or complex deployments.
+
+**Features:**
+- Interactive topology selection menu
+- Validation of hostnames and IP addresses
+- Node-by-node configuration collection
+- Automatic configuration file generation
+- Configuration validation before output
+- Support for cascaded replication setup
+
+**Usage:**
+
+```bash
+./configure_cluster.sh
+```
+
+**Key Benefits:**
+- Guided process prevents configuration errors
+- Validates all input before generating config
+- Automatically formats all node details
+- Creates production-ready configuration files
+- No manual XML editing required
+
+### Quick Configuration: one_click_install.sh
+
+For users who prefer a template-based approach with manual editing:
+
+```bash
+./one_click_install.sh --list
+./one_click_install.sh --topology 1-primary-2-standby --output my-cluster.xml
+```
+
+Then edit the generated file manually to customize node details.
+
+### Help
+
+Get usage information for any script:
+
+```bash
+./configure_cluster.sh              # Run interactively
+./one_click_install.sh --help
+./cm_install.sh --help
 ```
 
 ## Configuration File Parameters
@@ -282,29 +355,41 @@ Before deploying, ensure:
 
 ## Deployment Examples
 
-### Example 1: Simple 2-Node Cluster with CM
+### Example 1: Interactive Configuration for 2-Node Cluster with CM
 
+**Step 1: Run the interactive configuration helper**
 ```bash
-# Generate config
-./one_click_install.sh --topology 1-primary-1-standby --output prod-2node.xml
+./configure_cluster.sh
+```
 
-# Edit prod-2node.xml with actual hostnames and IPs
+**Expected interaction:**
+```
+Select topology: 1 (1 Primary + 1 Standby)
+Enter cluster name: prod_cluster
+Enter primary node name: db-primary
+Enter primary node IP: 10.0.1.10
+Enter standby node name: db-standby1
+Enter standby node IP: 10.0.1.11
+```
 
-# Deploy database
-gs_install -X prod-2node.xml
+**Step 2: Deploy the database**
+```bash
+gs_install -X prod_cluster-cluster.xml
+```
 
-# Deploy CM
-./cm_install.sh --config prod-2node.xml \
+**Step 3: Deploy Cluster Manager**
+```bash
+./cm_install.sh --config prod_cluster-cluster.xml \
                 --package /opt/software/openGauss/openGauss-CM-*.tar.gz
 ```
 
-### Example 2: 4-Node Cluster with CM
+### Example 2: Quick Configuration for 4-Node Cluster
 
 ```bash
 # Generate config
 ./one_click_install.sh --topology 1-primary-3-standby --output prod-4node.xml
 
-# Customize with production details
+# Edit prod-4node.xml and customize hostnames/IPs
 
 # Deploy database
 gs_install -X prod-4node.xml
@@ -314,40 +399,87 @@ gs_install -X prod-4node.xml
                 --package /path/to/openGauss-CM-*.tar.gz
 ```
 
-### Example 3: 3-Node Cascaded Cluster with CM
+### Example 3: Interactive Configuration for 3-Node Cascaded Cluster
+
+**Run interactive setup**
+```bash
+./configure_cluster.sh
+# Select topology 9 (1 Primary + 1 Standby + 1 Cascaded)
+# Enter primary, standby, and cascaded node details
+# Script automatically sets cascade role for the third node
+```
+
+**Deploy the cluster**
+```bash
+gs_install -X cluster-name-cluster.xml
+
+./cm_install.sh --config cluster-name-cluster.xml \
+                --package /path/to/openGauss-CM-*.tar.gz
+```
+
+### Example 4: Automated Deployment with CM Password
 
 ```bash
-# Generate config
-./one_click_install.sh --topology 1-primary-1-standby-cascaded --output prod-cascaded.xml
+# Generate interactive config
+./configure_cluster.sh
 
 # Deploy database
-gs_install -X prod-cascaded.xml
+gs_install -X cluster-name-cluster.xml
 
-# Deploy CM
-./cm_install.sh --config prod-cascaded.xml \
-                --package /path/to/openGauss-CM-*.tar.gz
+# Deploy CM with automated password
+./cm_install.sh --config cluster-name-cluster.xml \
+                --package /path/to/openGauss-CM-*.tar.gz \
+                --ca-password 'Secure@Pass123'
 ```
 
 ## Troubleshooting
 
-### List Available Templates
+### Getting Help
+
+Use these commands to get help for any script:
+
 ```bash
+# Interactive configuration helper
+./configure_cluster.sh
+
+# Quick topology selector
+./one_click_install.sh --help
+
+# Cluster Manager installer
+./cm_install.sh --help
+
+# List all available topologies
 ./one_click_install.sh --list
 ```
 
-### Get Help
-```bash
-./one_click_install.sh --help
-./cm_install.sh --help
-```
+### Configuration Issues
+
+**Invalid input during configure_cluster.sh**
+- Hostname validation accepts: alphanumeric, hyphens, underscores, dots
+  - Valid: `db-primary`, `node_1`, `postgres.local`
+  - Invalid: `db primary` (spaces), `db@primary` (special chars)
+- IP address must be in standard dotted-decimal format: `192.168.1.1`
+
+**configure_cluster.sh doesn't find templates**
+- Ensure templates directory exists: `ls templates/`
+- Run configure_cluster.sh from the multinode directory
+
+**Generated config file not recognized**
+- Verify file has `.xml` extension
+- Check file was created: `ls -la config-name.xml`
+- Validate XML syntax: `xmllint --noout config-name.xml`
 
 ### Configuration Validation
+
+**Check XML syntax**
 ```bash
-# Check XML syntax
 xmllint --noout prod-cluster.xml
 
 # Verify node count
 grep -o "node[0-9]*_hostname" prod-cluster.xml | sort -u | wc -l
+
+# Check cluster name
+grep "clusterName" prod-cluster.xml
 ```
 
 ### Common Issues
@@ -362,6 +494,11 @@ grep -o "node[0-9]*_hostname" prod-cluster.xml | sort -u | wc -l
 - Verify database cluster is in Normal state: `gs_om -t status --detail`
 - Ensure CM package file exists and is readable
 - Check that omm user can write to CM installation directory
+
+**Connection refused when configuring**
+- Ensure all nodes are reachable: `ping node-hostname`
+- Check hostnames resolve: `nslookup node-hostname` or `cat /etc/hosts`
+- Verify firewall doesn't block SSH (port 22)
 
 ## Related Documentation
 
