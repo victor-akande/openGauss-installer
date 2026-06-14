@@ -3,6 +3,12 @@
 # This script is used to prepare the Linux environment for the openGauss installation
 # It has been tested on openEuler 22.03 and runs perfectly without issues
 
+# Ensure script runs with root privileges
+if [ "$EUID" -ne 0 ]; then 
+  echo "Please run as root or use sudo."
+  exit 1
+fi
+
 # Disable SELINUX
 echo "Disabling SELINUX..."
 sed -i 's/^SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
@@ -69,7 +75,29 @@ yum install libaio* -y
 yum install tar  -y
 yum install expect  -y
 
+# Check and disable THP (Temporary + Permanent Config)
+echo "Disabling THP..."
+echo "Current status before change:"
+cat /sys/kernel/mm/transparent_hugepage/enabled
+
+echo "Applying permanent bootloader THP disable..."
+if command -v grubby &> /dev/null; then
+    grubby --update-kernel=ALL --args="transparent_hugepage=never"
+    echo "THP disabled persistently via grubby."
+else
+    echo "grubby not found, falling back to /etc/default/grub mutation..."
+    sed -i 's/^GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 transparent_hugepage=never"/' /etc/default/grub
+    if [ -d /sys/firmware/efi ]; then
+        grub2-mkconfig -o /boot/efi/EFI/openEuler/grub.cfg
+    else
+        grub2-mkconfig -o /boot/grub2/grub.cfg
+    fi
+    echo "THP disabled persistently via grub2-mkconfig."
+fi
+
+echo "Current runtime status after change:"
+cat /sys/kernel/mm/transparent_hugepage/enabled
+
 echo "Script execution complete."
 
 reboot
-
